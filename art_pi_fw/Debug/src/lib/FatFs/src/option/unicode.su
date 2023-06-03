@@ -1,0 +1,2 @@
+../src/lib/FatFs/src/option/ccsbcs.c:275:7:ff_convert	8	static
+../src/lib/FatFs/src/option/ccsbcs.c:303:7:ff_wtoupper	16	static

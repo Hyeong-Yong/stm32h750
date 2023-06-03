@@ -1,0 +1,7 @@
+../src/hw/driver/hangul/PHan_Lib.c:45:5:PHan_CnvCodeWan2Johab	0	static
+../src/hw/driver/hangul/PHan_Lib.c:140:6:PHan_HanFontLoad	32	static
+../src/hw/driver/hangul/PHan_Lib.c:193:6:PHan_UniFontLoad	28	static
+../src/hw/driver/hangul/PHan_Lib.c:252:6:PHan_EngFontLoad	0	static
+../src/hw/driver/hangul/PHan_Lib.c:72:5:PHan_FontLoad	16	static
+../src/hw/driver/hangul/PHan_Lib.c:273:6:PHan_MoveHanFont	0	static
+../src/hw/driver/hangul/PHan_Lib.c:291:6:PHan_DisHanFont	40	static

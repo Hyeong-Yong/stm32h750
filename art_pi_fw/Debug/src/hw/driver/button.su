@@ -1,0 +1,6 @@
+../src/hw/driver/button.c:60:6:buttonGetPressed.part.0	8	static
+../src/hw/driver/button.c:138:6:cliButton	16	static
+../src/hw/driver/button.c:35:6:buttonInit	32	static
+../src/hw/driver/button.c:60:6:buttonGetPressed	0	static
+../src/hw/driver/button.c:77:6:buttonObjCreate	16	static
+../src/hw/driver/button.c:85:6:buttonObjGetClicked	16	static
