@@ -1,2 +1,0 @@
-../src/ap/ap.cpp:16:6:void apInit()	8	static
-../src/ap/ap.cpp:21:6:void apMain()	80	static

@@ -1,5 +1,0 @@
-../src/hw/driver/fatfs/sd_diskio.c:98:9:SD_initialize	8	static
-../src/hw/driver/fatfs/sd_diskio.c:128:9:SD_read	8	static
-../src/hw/driver/fatfs/sd_diskio.c:150:9:SD_write	8	static
-../src/hw/driver/fatfs/sd_diskio.c:171:9:SD_ioctl	56	static
-../src/hw/driver/fatfs/sd_diskio.c:115:9:SD_status	8	static

@@ -1,2 +1,0 @@
-../src/lib/FatFs/src/option/syscall.c:158:7:ff_memalloc	0	static
-../src/lib/FatFs/src/option/syscall.c:170:6:ff_memfree	0	static
