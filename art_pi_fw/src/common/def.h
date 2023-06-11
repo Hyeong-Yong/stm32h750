@@ -81,6 +81,7 @@
 #define _DEF_DXL3             2
 #define _DEF_DXL4             3
 
+#define _DEF_INTERLEAVED	  0
 
 #define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
 

@@ -13,24 +13,21 @@
 #endif
 
 #include "hw_def.h"
+#include "cli.h"
 
 #ifdef _USE_HW_ADC
 
 
 #define ADC_MAX_CH    HW_ADC_MAX_CH
 
-bool     adcInit(void);
-uint32_t adcRead(uint8_t ch);
-uint32_t adcRead8(uint8_t ch);
-uint32_t adcRead10(uint8_t ch);
-uint32_t adcRead12(uint8_t ch);
-uint32_t adcRead16(uint8_t ch);
-uint32_t adcReadVoltage(uint8_t ch);
-uint32_t adcReadCurrent(uint8_t ch);
-uint32_t adcConvVoltage(uint8_t ch, uint32_t adc_value);
-uint32_t adcConvCurrent(uint8_t ch, uint32_t adc_value);
 
-uint8_t  adcGetRes(uint8_t ch);
+bool adcInit();
+bool adc_InterleavedMode_Open();
+bool adcInitInterleaved();
+bool adcIsInitInterleaved();
+bool adcSingleMeasure();
+bool MX_ADC1_Init(void);
+bool MX_ADC2_Init(void);
 
 
 #endif

@@ -86,6 +86,10 @@ bool uartOpen(uint8_t ch, uint32_t baud)
 
       __HAL_RCC_DMA1_CLK_ENABLE();
 
+      HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 5, 0);
+      HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+
+
       if (HAL_UART_Init(uart_tbl[ch].p_huart) != HAL_OK)
       {
         ret = false;
@@ -103,6 +107,11 @@ bool uartOpen(uint8_t ch, uint32_t baud)
         uart_tbl[ch].qbuffer.in  = uart_tbl[ch].qbuffer.len - ((DMA_Stream_TypeDef *)uart_tbl[ch].p_huart->hdmarx->Instance)->NDTR;
         uart_tbl[ch].qbuffer.out = uart_tbl[ch].qbuffer.in;
       }
+
+
+
+
+
       break;
   }
 

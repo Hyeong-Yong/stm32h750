@@ -12,12 +12,14 @@
 
 
 
-
-
 int main(void)
 {
-  hwInit();
+
+
+	hwInit();
   apInit();
+
+
 
   apMain();
 

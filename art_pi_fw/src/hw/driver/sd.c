@@ -49,8 +49,9 @@ bool sdInit(void)
   hsd.Init.BusWide              = SDMMC_BUS_WIDE_4B;
   hsd.Init.HardwareFlowControl  = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
   hsd.Init.ClockDiv             = SDMMC_HSpeed_CLK_DIV;
+  #ifndef USE_HAL_SD_REGISTER_CALLBACKS
   hsd.Init.TranceiverPresent    = SDMMC_TRANSCEIVER_NOT_PRESENT;
-
+  #endif
 
   is_detected = sdIsDetected();
 
