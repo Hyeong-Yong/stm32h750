@@ -26,10 +26,10 @@ void bspInit(void)
   __HAL_RCC_GPIOI_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
 
-  SCB_EnableICache();
-  SCB_EnableDCache();
+  //SCB_EnableICache();
+  //SCB_EnableDCache();
 
-  mpuConfig();
+  //mpuConfig();
 
 }
 

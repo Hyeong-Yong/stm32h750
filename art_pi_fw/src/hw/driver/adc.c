@@ -10,15 +10,6 @@
 
 #ifdef _USE_HW_ADC
 
-/* ADC parameters */
-#define ADCCONVERTEDVALUES_BUFFER_SIZE ((uint32_t)  64)    /* Size of array containing ADC converted values */
-
-/* Variable containing ADC conversions results */
-ALIGN_32BYTES(__IO uint32_t   aADCDualConvertedValues[ADCCONVERTEDVALUES_BUFFER_SIZE]);    /* ADC dual mode interleaved conversion results (ADC master and ADC slave results concatenated on data register 32 bits of ADC master). */
-ALIGN_32BYTES(__IO uint16_t   aADCxConvertedValues[ADCCONVERTEDVALUES_BUFFER_SIZE]);       /* For the purpose of this example, dispatch dual conversion values into arrays corresponding to each ADC conversion values. */
-ALIGN_32BYTES(__IO uint16_t   aADCyConvertedValues[ADCCONVERTEDVALUES_BUFFER_SIZE]);       /* For the purpose of this example, dispatch dual conversion values into arrays corresponding to each ADC conversion values. */
-uint8_t         ubADCDualConversionComplete = RESET;                        /* Set into ADC conversion complete callback */
-
 
 ADC_HandleTypeDef hadc1;
 ADC_HandleTypeDef hadc2;
@@ -170,7 +161,7 @@ bool MX_ADC1_Init(void)
   */
   multimode.Mode = ADC_DUALMODE_INTERL;
   multimode.DualModeData = ADC_DUALMODEDATAFORMAT_32_10_BITS;
-  multimode.TwoSamplingDelay = ADC_TWOSAMPLINGDELAY_1CYCLE;
+  multimode.TwoSamplingDelay = ADC_TWOSAMPLINGDELAY_3CYCLES;
   if (HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode) != HAL_OK)
   {
     ret = false;
@@ -180,7 +171,7 @@ bool MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLE_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
@@ -283,7 +274,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
     hdma_adc1.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
     hdma_adc1.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
     hdma_adc1.Init.Mode = DMA_NORMAL;
-    hdma_adc1.Init.Priority = DMA_PRIORITY_LOW;
+    hdma_adc1.Init.Priority = DMA_PRIORITY_HIGH;
     hdma_adc1.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_adc1) != HAL_OK)
     {
@@ -295,8 +286,8 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
 
 
     /* ADC1 interrupt Init */
-    HAL_NVIC_SetPriority(ADC_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(ADC_IRQn);
+    //HAL_NVIC_SetPriority(ADC_IRQn, 0, 0);
+    //HAL_NVIC_EnableIRQ(ADC_IRQn);
   }
   else if(adcHandle->Instance==ADC2)
   {
@@ -313,8 +304,8 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
     HAL_SYSCFG_AnalogSwitchConfig(SYSCFG_SWITCH_PA1, SYSCFG_SWITCH_PA1_OPEN);
 
     /* ADC2 interrupt Init */
-    HAL_NVIC_SetPriority(ADC_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(ADC_IRQn);
+    //HAL_NVIC_SetPriority(ADC_IRQn, 0, 0);
+    //HAL_NVIC_EnableIRQ(ADC_IRQn);
   }
 }
 
