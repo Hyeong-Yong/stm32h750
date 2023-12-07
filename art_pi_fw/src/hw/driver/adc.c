@@ -22,9 +22,15 @@ static void cliADC(cli_args_t *args);
 #endif
 
 
+/* ADC parameters */
+#define ADC_BUF_SIZE ((uint32_t)  8)    /* Size of array containing ADC converted values */
+
+/* Variable containing ADC conversions results */
+static __attribute__((section(".non_cache"))) ALIGN_32BYTES(__IO uint32_t adcBuf[ADC_BUF_SIZE]);    /* ADC dual mode interleaved conversion results (ADC master and ADC slave results concatenated on data register 32 bits of ADC master). */
 
 
-#define ADC_BUF_SIZE 8
+
+
 
 typedef struct
 {
@@ -40,8 +46,6 @@ adc_interleaved_tbl_t adc_tbl[ADC_MAX_CH] =
 	{
         {&hadc1, &hadc2, &hdma_adc1, false, false},
     };
-
-static __attribute__((section(".non_cache"))) __IO uint32_t adcBuf[ADC_BUF_SIZE];
 
 bool adcInit(){
 	bool ret = true;
