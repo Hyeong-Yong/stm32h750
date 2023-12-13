@@ -28,6 +28,8 @@ extern "C" {
 #include "ltdc.h"
 #include "lcd.h"
 #include "adc.h"
+#include "spi.h"
+
 
 void hwInit(void);
 

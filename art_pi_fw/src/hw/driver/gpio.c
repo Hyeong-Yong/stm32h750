@@ -27,6 +27,7 @@ const gpio_tbl_t gpio_tbl[GPIO_MAX_CH] =
     {
         {GPIOD, GPIO_PIN_5, _DEF_INPUT_PULLUP, GPIO_PIN_SET, GPIO_PIN_RESET,   _DEF_HIGH},      // 0. SDCARD_CD
         {GPIOD, GPIO_PIN_4, _DEF_OUTPUT,       GPIO_PIN_SET, GPIO_PIN_RESET,   _DEF_LOW},       // 1. LCD_BL
+		{GPIOE, GPIO_PIN_5, _DEF_OUTPUT_PULLUP, GPIO_PIN_RESET, GPIO_PIN_SET, _DEF_HIGH}, 		// 2. DAC8562_SYNC
     };
 
 
@@ -43,6 +44,7 @@ bool gpioInit(void)
 
 
   __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOE_CLK_ENABLE();
 
   for (int i=0; i<GPIO_MAX_CH; i++)
   {

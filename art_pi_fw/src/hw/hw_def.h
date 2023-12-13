@@ -15,7 +15,11 @@
 
 
 #define _USE_HW_SD
+
 #define _USE_HW_QSPI
+#define _USE_HW_SPI
+#define      HW_SPI_MAX_CH			1
+
 #define _USE_HW_FLASH
 #define _USE_HW_FATFS
 
@@ -25,7 +29,6 @@
 
 #define _USE_HW_LED
 #define      HW_LED_MAX_CH          2
-
 
 
 
@@ -46,7 +49,7 @@
 #define      HW_SDRAM_MEM_SIZE      (32*1024*1024)
 
 #define _USE_HW_GPIO
-#define      HW_GPIO_MAX_CH         2
+#define      HW_GPIO_MAX_CH         3
 
 #define _USE_HW_LCD
 #define _USE_HW_LTDC
@@ -55,6 +58,8 @@
 
 
 #define _PIN_GPIO_SDCARD_DETECT     0
+#define _PIN_GPIO_DAC8562_SYNC      2
+
 
 
 

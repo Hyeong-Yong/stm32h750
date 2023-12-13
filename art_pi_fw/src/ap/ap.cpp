@@ -16,7 +16,7 @@ void apInit(void)
 {
   cliOpen(_DEF_UART1, 57600);
   //adcInitInterleaved();
-
+  spiOpen(_DEF_SPI1);
 }
 
 void apMain(void)

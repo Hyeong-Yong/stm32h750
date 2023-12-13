@@ -40,6 +40,9 @@ void hwInit(void)
   fatfsInit();
 
 
+  spiInit();
+  dac8562_init();
+
   //lcdInit();
   adcInit();
 
