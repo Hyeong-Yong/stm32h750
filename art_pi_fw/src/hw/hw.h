@@ -29,7 +29,7 @@ extern "C" {
 #include "lcd.h"
 #include "adc.h"
 #include "spi.h"
-
+#include "dac8562.h"
 
 void hwInit(void);
 

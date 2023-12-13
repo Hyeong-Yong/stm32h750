@@ -23,7 +23,7 @@ void hwInit(void)
 
   ledInit();
   uartInit();
-  //uartOpen(_DEF_UART1, 57600);
+  uartOpen(_DEF_UART1, 57600);
 
   logPrintf("\n\n");
   logPrintf("[ Firmware Begin... ]\r\n");
