@@ -57,7 +57,7 @@ bool spiOpen(uint8_t ch)
 
     	  p_spi->h_spi->Init.Mode = SPI_MODE_MASTER;
     	  p_spi->h_spi->Init.Direction = SPI_DIRECTION_2LINES_TXONLY;
-    	  p_spi->h_spi->Init.DataSize = SPI_DATASIZE_16BIT;
+    	  p_spi->h_spi->Init.DataSize = SPI_DATASIZE_24BIT;
     	  p_spi->h_spi->Init.CLKPolarity = SPI_POLARITY_LOW;
     	  p_spi->h_spi->Init.CLKPhase = SPI_PHASE_2EDGE;
     	  p_spi->h_spi->Init.NSS = SPI_NSS_SOFT;
@@ -170,7 +170,7 @@ uint16_t spiTransfer16(uint8_t ch, uint16_t data)
   {
     tBuf[1] = (uint8_t)data;
     tBuf[0] = (uint8_t)(data>>8);
-    HAL_SPI_TransmitReceive(p_spi->h_spi, (uint8_t *)&tBuf, (uint8_t *)&rBuf, 2, 0xffff);
+    HAL_SPI_TransmitReceive(p_spi->h_spi, (uint8_t *)&tBuf, (uint8_t *)&rBuf, 2, 100);
 
     ret = rBuf[0];
     ret <<= 8;
@@ -178,7 +178,7 @@ uint16_t spiTransfer16(uint8_t ch, uint16_t data)
   }
   else
   {
-    HAL_SPI_TransmitReceive(p_spi->h_spi, (uint8_t *)&data, (uint8_t *)&ret, 1, 0xffff);
+    HAL_SPI_TransmitReceive(p_spi->h_spi, (uint8_t *)&data, (uint8_t *)&ret, 1, 100);
   }
 
   return ret;
