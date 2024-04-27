@@ -21,20 +21,22 @@ typedef struct
   TIM_HandleTypeDef* h_tim;
   uint32_t channel;
   uint32_t period;
-  uint32_t pulse;
   uint32_t prescaler;
+  uint32_t pulse;
   bool is_timeInit;
   bool is_pwmInit;
 } pwm_t;
 
+TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim5;
 
 
 static pwm_t pwm_tbl[PWM_MAX_CH] =
     {
-	{&htim5, TIM_CHANNEL_1, 1000000, 10000, 240}, //PH10
-	{&htim5, TIM_CHANNEL_2, 1000000, 10000, 240}, //PA1
-    };// 1000000 = 1 sec, 1000 = 1ms, 1 = 1 us
+     {&htim2, TIM_CHANNEL_1, 1000000, 240,   1000}, //PA15
+ 	{&htim5, TIM_CHANNEL_1, 1000000, 240,   1000}, //PH10, // 1000000 = 1 sec, 1000 = 1ms, 1 = 1 us
+ 	{&htim5, TIM_CHANNEL_2, 1000000, 240,   10000}, //PA1
+    };
 
 
 
@@ -73,7 +75,93 @@ bool pwmBegin(uint8_t ch, uint32_t period, uint32_t pulse, uint32_t prescaler)
 
   switch(ch)
   {
-    case _DEF_PWM1:
+
+  case _DEF_PWM1:
+      p_pwm->h_tim=&htim2;
+      p_pwm->h_tim->Instance = TIM2;
+      p_pwm->h_tim->Init.Prescaler = p_pwm->prescaler;
+      p_pwm->h_tim->Init.CounterMode = TIM_COUNTERMODE_UP;
+      p_pwm->h_tim->Init.Period = p_pwm->period;
+      p_pwm->h_tim->Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+      p_pwm->h_tim->Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+        if (HAL_TIM_Base_Init(p_pwm->h_tim) == HAL_OK)
+        {
+          p_pwm->is_timeInit = true;
+          ret= true;
+        }
+        sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+        if (HAL_TIM_ConfigClockSource(p_pwm->h_tim, &sClockSourceConfig) != HAL_OK)
+        {
+          Error_Handler();
+        }
+
+        if (HAL_TIM_PWM_Init(p_pwm->h_tim) != HAL_OK)
+        {
+          Error_Handler();
+        }
+
+        sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+        sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+        if (HAL_TIMEx_MasterConfigSynchronization(p_pwm->h_tim, &sMasterConfig) != HAL_OK)
+        {
+          Error_Handler();
+        }
+
+        sConfigOC.OCMode = TIM_OCMODE_PWM1;
+        sConfigOC.Pulse = p_pwm->pulse;
+        sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+        sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+        if (HAL_TIM_PWM_ConfigChannel(p_pwm->h_tim, &sConfigOC, p_pwm->channel) == HAL_OK)
+        {
+            p_pwm->is_pwmInit=true;
+        }
+
+        HAL_TIM_MspPostInit(p_pwm->h_tim);
+  	break;
+
+    case _DEF_PWM2:
+        p_pwm->h_tim=&htim5;
+        p_pwm->h_tim->Instance = TIM5;
+        p_pwm->h_tim->Init.Prescaler = p_pwm->prescaler;
+        p_pwm->h_tim->Init.CounterMode = TIM_COUNTERMODE_UP;
+        p_pwm->h_tim->Init.Period = p_pwm->period;
+        p_pwm->h_tim->Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+        p_pwm->h_tim->Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+          if (HAL_TIM_Base_Init(p_pwm->h_tim) == HAL_OK)
+          {
+            p_pwm->is_timeInit = true;
+            ret= true;
+          }
+          sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+          if (HAL_TIM_ConfigClockSource(p_pwm->h_tim, &sClockSourceConfig) != HAL_OK)
+          {
+            Error_Handler();
+          }
+          if (HAL_TIM_PWM_Init(p_pwm->h_tim) != HAL_OK)
+          {
+            Error_Handler();
+          }
+
+          sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+          sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+          if (HAL_TIMEx_MasterConfigSynchronization(p_pwm->h_tim, &sMasterConfig) != HAL_OK)
+          {
+            Error_Handler();
+          }
+
+          sConfigOC.OCMode = TIM_OCMODE_PWM1;
+          sConfigOC.Pulse = p_pwm->pulse;
+          sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+          sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+          if (HAL_TIM_PWM_ConfigChannel(p_pwm->h_tim, &sConfigOC, p_pwm->channel) == HAL_OK)
+          {
+              p_pwm->is_pwmInit=true;
+          }
+
+          HAL_TIM_MspPostInit(p_pwm->h_tim);
+    	break;
+
+    case _DEF_PWM3:
       p_pwm->h_tim=&htim5;
       p_pwm->h_tim->Instance = TIM5;
       p_pwm->h_tim->Init.Prescaler = p_pwm->prescaler;
@@ -108,70 +196,32 @@ bool pwmBegin(uint8_t ch, uint32_t period, uint32_t pulse, uint32_t prescaler)
         sConfigOC.Pulse = p_pwm->pulse;
         sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
         sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-        if (HAL_TIM_PWM_ConfigChannel(p_pwm->h_tim, &sConfigOC, TIM_CHANNEL_2) == HAL_OK)
-        {
-            p_pwm->is_pwmInit=true;
-        }
         if (HAL_TIM_PWM_ConfigChannel(p_pwm->h_tim, &sConfigOC, p_pwm->channel) == HAL_OK)
         {
             p_pwm->is_pwmInit=true;
         }
-
         HAL_TIM_MspPostInit(p_pwm->h_tim);
-
       break;
-    case _DEF_PWM2:
-        p_pwm->h_tim=&htim5;
-        p_pwm->h_tim->Instance = TIM5;
-        p_pwm->h_tim->Init.Prescaler = p_pwm->prescaler;
-        p_pwm->h_tim->Init.CounterMode = TIM_COUNTERMODE_UP;
-        p_pwm->h_tim->Init.Period = p_pwm->period;
-        p_pwm->h_tim->Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-        p_pwm->h_tim->Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-          if (HAL_TIM_Base_Init(p_pwm->h_tim) == HAL_OK)
-          {
-            p_pwm->is_timeInit = true;
-            ret= true;
-          }
 
-          sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-          if (HAL_TIM_ConfigClockSource(p_pwm->h_tim, &sClockSourceConfig) != HAL_OK)
-          {
-            Error_Handler();
-          }
-          if (HAL_TIM_PWM_Init(p_pwm->h_tim) != HAL_OK)
-          {
-            Error_Handler();
-          }
-
-          sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-          sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-          if (HAL_TIMEx_MasterConfigSynchronization(p_pwm->h_tim, &sMasterConfig) != HAL_OK)
-          {
-            Error_Handler();
-          }
-
-          sConfigOC.OCMode = TIM_OCMODE_PWM1;
-          sConfigOC.Pulse = p_pwm->pulse;
-          sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-          sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-          if (HAL_TIM_PWM_ConfigChannel(p_pwm->h_tim, &sConfigOC, p_pwm->channel) == HAL_OK)
-          {
-              p_pwm->is_pwmInit=true;
-          }
-
-          HAL_TIM_MspPostInit(p_pwm->h_tim);
-
-    	break;
   }
   ret = true;
   return ret;
 }
+
 void pwmStart(uint8_t ch)
 {
   pwm_t* p_pwm = &pwm_tbl[ch];
   HAL_TIM_PWM_Start(p_pwm->h_tim, p_pwm->channel);
 }
+
+void pwmSycDelay(uint8_t ch, uint32_t delay)
+{
+  pwm_t* p_pwm = &pwm_tbl[ch];
+  // 1 clock is delayed when using encapulated function. To synchronize, add 1 clock
+  p_pwm->h_tim->Instance->CNT = delay+1;
+}
+
+
 bool pwmDeinit(uint8_t ch)
 {
   bool ret = false;
@@ -190,6 +240,7 @@ bool pwmDeinit(uint8_t ch)
 
   return true;
 }
+
 bool pwmStop(uint8_t ch)
 {
   if (ch >= PWM_MAX_CH) return false;
@@ -199,9 +250,15 @@ bool pwmStop(uint8_t ch)
 
   return true;
 }
+
 void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* tim_baseHandle)
 {
-  if(tim_baseHandle->Instance==TIM5)
+
+	  if(tim_baseHandle->Instance==TIM2)
+	  {
+	    __HAL_RCC_TIM2_CLK_ENABLE();
+	  }
+	  else if(tim_baseHandle->Instance==TIM5)
   {
     __HAL_RCC_TIM5_CLK_ENABLE();
   }
@@ -210,9 +267,22 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* tim_baseHandle)
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef* timHandle)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-  if(timHandle->Instance==TIM5)
-  {
 
+  if(timHandle->Instance==TIM2)
+  {
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    /**TIM2 GPIO Configuration
+    PA15 (JTDI)     ------> TIM2_CH1
+    */
+    GPIO_InitStruct.Pin = GPIO_PIN_15;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  }
+  else if(timHandle->Instance==TIM5)
+  {
 	    __HAL_RCC_GPIOA_CLK_ENABLE();
 	    __HAL_RCC_GPIOH_CLK_ENABLE();
 	    /**TIM5 GPIO Configuration
@@ -232,13 +302,16 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* timHandle)
 	    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	    GPIO_InitStruct.Alternate = GPIO_AF2_TIM5;
 	    HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
-
-
   }
 }
 void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* tim_baseHandle)
 {
-  if(tim_baseHandle->Instance==TIM5)
+
+	  if(tim_baseHandle->Instance==TIM2)
+	  {
+	    __HAL_RCC_TIM2_CLK_DISABLE();
+	  }
+	  else if(tim_baseHandle->Instance==TIM5)
   {
     __HAL_RCC_TIM5_CLK_DISABLE();
   }

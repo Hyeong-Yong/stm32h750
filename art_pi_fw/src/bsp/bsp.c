@@ -33,8 +33,9 @@ void bspInit(void)
 
   mpuConfig();
 
-
+  //
   // MCO(master clock out) enable
+  //
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /*Configure GPIO pin : PA8 */

@@ -24,7 +24,7 @@
 #define _USE_HW_FATFS
 
 #define _USE_HW_PWM
-#define      HW_PWM_MAX_CH			2
+#define      HW_PWM_MAX_CH			3
 
 
 #define _USE_HW_ADC

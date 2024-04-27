@@ -18,7 +18,9 @@ void apInit(void)
   //adcInitInterleaved();
   spiOpen(_DEF_SPI1);
   pwmStart(_DEF_PWM1);
+  pwmSycDelay(_DEF_PWM1, 10000);
   pwmStart(_DEF_PWM2);
+  pwmStart(_DEF_PWM3);
 }
 
 void apMain(void)

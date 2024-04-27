@@ -29,6 +29,7 @@ bool pwmBegin(uint8_t ch, uint32_t period, uint32_t pulse, uint32_t prescaler);
 bool pwmDeinit(uint8_t ch);
 void pwmStart(uint8_t ch);
 bool pwmStop(uint8_t ch);
+void pwmSycDelay(uint8_t ch, uint32_t delay);
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 #endif
