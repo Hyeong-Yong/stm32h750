@@ -30,6 +30,7 @@ extern "C" {
 #include "adc.h"
 #include "spi.h"
 #include "dac8562.h"
+#include "pwm.h"
 
 void hwInit(void);
 

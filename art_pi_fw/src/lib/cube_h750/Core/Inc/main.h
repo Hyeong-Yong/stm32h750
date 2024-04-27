@@ -64,6 +64,8 @@ void Error_Handler(void);
 #define LCD_BL_GPIO_Port GPIOD
 #define LED_R_Pin GPIO_PIN_15
 #define LED_R_GPIO_Port GPIOC
+#define DAC8562_SYNC_Pin GPIO_PIN_5
+#define DAC8562_SYNC_GPIO_Port GPIOE
 #define LED_B_Pin GPIO_PIN_8
 #define LED_B_GPIO_Port GPIOI
 #define BUTTON_Pin GPIO_PIN_4

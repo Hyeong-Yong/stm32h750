@@ -9,12 +9,6 @@
 #include "hw.h"
 
 
-extern ADC_HandleTypeDef hadc1;
-extern ADC_HandleTypeDef hadc2;
-extern DMA_HandleTypeDef hdma_adc1;
-
-
-
 void hwInit(void)
 {
   bspInit();
@@ -39,12 +33,12 @@ void hwInit(void)
   sdInit();
   fatfsInit();
 
-
   spiInit();
   dac8562_init();
 
+  pwmInit();
   //lcdInit();
-  adcInit();
+  //adcInit();
 
 
 }

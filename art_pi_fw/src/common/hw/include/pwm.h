@@ -15,16 +15,21 @@ extern "C" {
 
 #include "hw_def.h"
 
-#ifdef _USE_HW_PWM
 
-#define PWM_MAX_CH       HW_PWM_MAX_CH
+#include "hw_def.h"
+
+#define PWM_MAX_CH	HW_PWM_MAX_CH
+
+
+#ifdef _USE_HW_PWM
 
 
 bool pwmInit(void);
-bool pwmIsInit(void);
-void pwmWrite(uint8_t ch, uint16_t pwm_data);
-uint16_t pwmRead(uint8_t ch);
-uint16_t pwmGetMax(uint8_t ch);
+bool pwmBegin(uint8_t ch, uint32_t period, uint32_t pulse, uint32_t prescaler);
+bool pwmDeinit(uint8_t ch);
+void pwmStart(uint8_t ch);
+bool pwmStop(uint8_t ch);
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 #endif
 
