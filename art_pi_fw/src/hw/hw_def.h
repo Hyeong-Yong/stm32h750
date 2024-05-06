@@ -18,7 +18,7 @@
 
 #define _USE_HW_QSPI
 #define _USE_HW_SPI
-#define      HW_SPI_MAX_CH			1
+#define      HW_SPI_MAX_CH			2
 
 #define _USE_HW_FLASH
 #define _USE_HW_FATFS
@@ -61,6 +61,7 @@
 
 
 #define _PIN_GPIO_SDCARD_DETECT     0
+
 #define _PIN_GPIO_DAC8562_SYNC      2
 
 

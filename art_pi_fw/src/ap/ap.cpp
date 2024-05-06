@@ -17,6 +17,8 @@ void apInit(void)
   cliOpen(_DEF_UART1, 57600);
   //adcInitInterleaved();
   spiOpen(_DEF_SPI1);
+  spiOpen(_DEF_SPI2);
+
   pwmStart(_DEF_PWM1);
   pwmSycDelay(_DEF_PWM1, 10000);
   pwmStart(_DEF_PWM2);
