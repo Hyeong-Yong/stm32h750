@@ -33,9 +33,10 @@ TIM_HandleTypeDef htim5;
 
 static pwm_t pwm_tbl[PWM_MAX_CH] =
     {
-     {&htim2, TIM_CHANNEL_1, 1000000, 240,   1000}, //PA15
- 	{&htim5, TIM_CHANNEL_1, 1000000, 240,   1000}, //PH10, // 1000000 = 1 sec, 1000 = 1ms, 1 = 1 us
- 	{&htim5, TIM_CHANNEL_2, 1000000, 240,   10000}, //PA1
+     {&htim2, TIM_CHANNEL_1, 1000000, 240,   1000}, //PA15, RF GENERATOR TRIGGER IN
+     {&htim5, TIM_CHANNEL_1, 1000000, 240,   1000}, //PH10, DIGITIZER TRIGGER IN
+	 // 1000000 = 1 sec, 1000 = 1ms, 1 = 1 us
+ 	 {&htim5, TIM_CHANNEL_2, 1000000, 240,   10000}, //PA1
     };
 
 
@@ -109,7 +110,7 @@ bool pwmBegin(uint8_t ch, uint32_t period, uint32_t pulse, uint32_t prescaler)
 
         sConfigOC.OCMode = TIM_OCMODE_PWM1;
         sConfigOC.Pulse = p_pwm->pulse;
-        sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+        sConfigOC.OCPolarity = TIM_OCPOLARITY_LOW;
         sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
         if (HAL_TIM_PWM_ConfigChannel(p_pwm->h_tim, &sConfigOC, p_pwm->channel) == HAL_OK)
         {
