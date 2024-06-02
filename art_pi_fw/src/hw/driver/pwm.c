@@ -33,10 +33,10 @@ TIM_HandleTypeDef htim5;
 
 static pwm_t pwm_tbl[PWM_MAX_CH] =
     {
-     {&htim2, TIM_CHANNEL_1, 1000000, 240,   1000}, //PA15, RF GENERATOR TRIGGER IN
-     {&htim5, TIM_CHANNEL_1, 1000000, 240,   1000}, //PH10, DIGITIZER TRIGGER IN
+     {&htim2, TIM_CHANNEL_1, 1000000, 240,   10}, //PA15, RF GENERATOR TRIGGER IN (Windfreak)
+     {&htim5, TIM_CHANNEL_1, 1000000, 240,   10}, //PH10, DIGITIZER TRIGGER IN (AlazarTech)
 	 // 1000000 = 1 sec, 1000 = 1ms, 1 = 1 us
- 	 {&htim5, TIM_CHANNEL_2, 1000000, 240,   10000}, //PA1
+ 	 {&htim5, TIM_CHANNEL_2, 1000000, 240,   10000}, //PA1,
     };
 
 

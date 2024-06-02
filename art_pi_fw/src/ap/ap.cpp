@@ -17,9 +17,9 @@ void apInit(void)
   cliOpen(_DEF_UART1, 57600);
   //adcInitInterleaved();
   spiOpen(_DEF_SPI1);
-  pwmStart(_DEF_PWM1);
-  pwmSycDelay(_DEF_PWM1, 10000);
-  pwmStart(_DEF_PWM2);
+  pwmStart(_DEF_PWM1); //PA15, RF GENERATOR TRIGGER IN (Windfreak)
+  pwmSycDelay(_DEF_PWM1, 10000); //
+  pwmStart(_DEF_PWM2); //PH10, DIGITIZER TRIGGER IN (AlazarTech)
   pwmStart(_DEF_PWM3);
 }
 
@@ -37,22 +37,19 @@ void apMain(void)
       ledToggle(_DEF_LED1);
     }
 
-
-
     cliMain();
 
 
-
-    sd_state_t sd_state;
-
-    sd_state = sdUpdate();
-    if (sd_state == SDCARD_CONNECTED)
-    {
-      logPrintf("\nSDCARD_CONNECTED\n");
-    }
-    if (sd_state == SDCARD_DISCONNECTED)
-    {
-      logPrintf("\nSDCARD_DISCONNECTED\n");
-    }
+//    sd_state_t sd_state;
+//
+//    sd_state = sdUpdate();
+//    if (sd_state == SDCARD_CONNECTED)
+//    {
+//      logPrintf("\nSDCARD_CONNECTED\n");
+//    }
+//    if (sd_state == SDCARD_DISCONNECTED)
+//    {
+//      logPrintf("\nSDCARD_DISCONNECTED\n");
+//    }
   }
 }

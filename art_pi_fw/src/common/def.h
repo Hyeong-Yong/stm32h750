@@ -47,8 +47,8 @@
 #define _DEF_I2S3             2
 #define _DEF_I2S4             3
 
-#define _DEF_PWM1             0
-#define _DEF_PWM2             1
+#define _DEF_PWM1             0 //PA15, RF GENERATOR TRIGGER IN (Windfreak)
+#define _DEF_PWM2             1 //PH10, DIGITIZER TRIGGER IN (AlazarTech)
 #define _DEF_PWM3             2
 #define _DEF_PWM4             3
 
