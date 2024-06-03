@@ -9,6 +9,7 @@
 #include "cli.h"
 #include "pwm.h"
 #include "led.h"
+#include "uart.h"
 
 #ifdef _USE_HW_PWM
 
@@ -17,6 +18,27 @@ static void cliPWM(cli_args_t *args);
 
 #endif
 
+
+//1. init 초기화 (start)
+//2. 횟수 : ( (end - start) / interval ) +1
+
+//Config
+//1. 딜레이 (pwmSycDelay (_PDEF_PWM1, X)
+//2. 횟수 (uint32 NumOfFreq)
+//Run
+//3. 실행
+
+
+enum instruction
+  {
+    INST_SET_INIT = 0x01,
+    INST_SET_DELAY =0x02,
+    INST_SET_NumOfFreq = 0x03,
+    INST_GET_DELAY = 0x04,
+    INST_GET_NumOfFreq =0x05,
+    INST_RUN = 0x06,
+  };
+
 typedef struct
 {
   TIM_HandleTypeDef* h_tim;
@@ -24,14 +46,39 @@ typedef struct
   uint32_t period;
   uint32_t prescaler;
   uint32_t pulse;
+
   bool is_timeInit;
   bool is_pwmInit;
 } pwm_t;
 
+
+const uint8_t UART_PWM = _DEF_UART2;
+#define PKT_BUF_MAX 6
+typedef struct
+{
+  uint8_t header;
+  uint8_t length;
+  uint8_t inst;
+  uint8_t check;
+  uint16_t param;
+} pwm_packet_t;
+
+typedef struct
+{
+	  uint16_t delay;
+	  uint16_t numOfFreq;
+
+	  uint32_t state;
+	  uint32_t pre_time;
+	  uint32_t packet_buf[PKT_BUF_MAX];
+} pwm_status_t;
+
+
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim5;
 
-
+pwm_packet_t pwm_packet;
+pwm_status_t pwm_status;
 static pwm_t pwm_tbl[PWM_MAX_CH] =
     {
      {&htim2, TIM_CHANNEL_1, 1000000, 240,   10}, //PA15, RF GENERATOR TRIGGER IN (Windfreak)
@@ -39,6 +86,127 @@ static pwm_t pwm_tbl[PWM_MAX_CH] =
 	 // 1000000 = 1 sec, 1000 = 1ms, 1 = 1 us
  	 {&htim5, TIM_CHANNEL_2, 1000000, 240,   10000}, //PA1,
     };
+
+
+
+bool ReceivePacket(uint8_t ch)
+{
+  bool ret = false;
+
+  if (ch >= PWM_MAX_CH) return false;
+
+  pwm_t *p_pwm = &pwm_tbl[ch];
+
+  uint8_t rx_data;
+
+  if (p_pwm->is_pwmInit == false)
+    {
+      return ret;
+    }
+
+  pwm_status.pre_time=millis();
+
+  while (uartAvailable(UART_PWM)>0)
+    {
+      rx_data = uartRead(UART_PWM);
+      ret = pwmProcessPKT(rx_data);
+
+      if (ret == true)
+	{
+	  break;
+	}
+
+      if (millis() - pwm_status.pre_time >= 50)
+	{
+	  break;
+	}
+    }
+  return ret;
+}
+
+
+bool pwmProcessPKT(uint8_t rx_data)
+{
+  bool ret =false;
+
+  if ( millis() - pwm_status.pre_time > 100)
+    {
+	  pwm_status.state = STATE_HEADER;
+    }
+  pwm_status.pre_time= millis();
+
+  switch (pwm_status.state)
+  {
+    case STATE_HEADER:
+
+      if (rx_data == STX)
+	{
+      pwm_status.packet_buf[INDEX_HEADER]= rx_data;
+      pwm_status.state = STATE_LENGTH;
+	}
+      break;
+
+    case STATE_LENGTH:
+    	pwm_status.packet_buf[INDEX_LENGTH]= rx_data;
+    	pwm_status.state= STATE_INST;
+      break;
+
+    case STATE_INST:
+    	pwm_status.packet_buf[INDEX_INST]= rx_data;
+    	pwm_status.state = STATE_PARAM_1;
+      break;
+
+    case STATE_PARAM_1:
+    	pwm_status.packet_buf[INDEX_PARAM_1] = rx_data;
+    	pwm_status.state= STATE_PARAM_2;
+      break;
+
+    case STATE_PARAM_2:
+    	pwm_status.packet_buf[INDEX_PARAM_2] = rx_data;
+    	pwm_status.state= STATE_CHECK;
+      break;
+    case STATE_CHECK:
+    	pwm_status.packet_buf[INDEX_CHECK] = rx_data;
+      if (checksumPacket() == true)
+	{
+      pwm_packet.header = pwm_status.packet_buf[INDEX_HEADER];
+      pwm_packet.length = pwm_status.packet_buf[INDEX_LENGTH];
+      pwm_packet.inst   = pwm_status.packet_buf[INDEX_INST];
+      pwm_packet.param  = pwm_status.packet_buf[INDEX_PARAM_1] << 0;
+      pwm_packet.param |= pwm_status.packet_buf[INDEX_PARAM_2] << 8;
+      pwm_packet.check  = pwm_status.packet_buf[INDEX_CHECK];
+	  ret=true;
+	  pwm_status.state = STATE_HEADER;
+	}
+      else
+	{
+      pwm_status.state = STATE_HEADER;
+	}
+      break;
+  }
+  return ret;
+}
+
+
+bool checksumPacket()
+{
+  bool ret = false;
+  uint32_t sum = 0, total = 0;
+  for (int i = 0; i < INDEX_CHECK+1; i++)
+    {
+      sum += pwm_status.packet_buf[i];
+    }
+  total = sum;
+  total = total & 0xFF;
+  total = (~total + 1) & 0xFF;
+  total += sum;
+  total = total & 0xFF;
+  if (total == 0)
+    {
+      return ret = true;
+    }
+  return ret;
+}
 
 
 

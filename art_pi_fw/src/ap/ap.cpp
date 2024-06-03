@@ -11,6 +11,9 @@
 #include "ap.h"
 #include "adc.h"
 
+const uint8_t HEADER = 0xF0;
+
+
 
 void apInit(void)
 {
@@ -18,7 +21,7 @@ void apInit(void)
   //adcInitInterleaved();
   spiOpen(_DEF_SPI1);
   pwmStart(_DEF_PWM1); //PA15, RF GENERATOR TRIGGER IN (Windfreak)
-  pwmSycDelay(_DEF_PWM1, 10000); //
+  pwmSycDelay(_DEF_PWM1, 10000); // 10ms delay
   pwmStart(_DEF_PWM2); //PH10, DIGITIZER TRIGGER IN (AlazarTech)
   spiOpen(_DEF_SPI2);
 }
@@ -38,7 +41,6 @@ void apMain(void)
     }
 
     cliMain();
-
 
 //    sd_state_t sd_state;
 //
