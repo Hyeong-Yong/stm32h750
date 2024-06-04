@@ -10,10 +10,10 @@
 
 #include "ap.h"
 #include "adc.h"
+#include "pwm.h"
 
-const uint8_t HEADER = 0xF0;
 
-
+extern pwm_packet_t pwm_packet;
 
 void apInit(void)
 {
@@ -21,7 +21,7 @@ void apInit(void)
   //adcInitInterleaved();
   spiOpen(_DEF_SPI1);
   pwmStart(_DEF_PWM1); //PA15, RF GENERATOR TRIGGER IN (Windfreak)
-  pwmSycDelay(_DEF_PWM1, 10000); // 10ms delay
+  pwmSet_SycDelay(_DEF_PWM1, 100); // 10ms delay
   pwmStart(_DEF_PWM2); //PH10, DIGITIZER TRIGGER IN (AlazarTech)
   spiOpen(_DEF_SPI2);
 }
@@ -41,6 +41,12 @@ void apMain(void)
     }
 
     cliMain();
+
+    if (ReceivePacket(_DEF_UART2)== true){
+    	if (pwm_packet.inst == 0xF3){
+
+    	}
+    }
 
 //    sd_state_t sd_state;
 //

@@ -56,18 +56,9 @@ const uint8_t UART_PWM = _DEF_UART2;
 #define PKT_BUF_MAX 6
 typedef struct
 {
-  uint8_t header;
-  uint8_t length;
-  uint8_t inst;
-  uint8_t check;
-  uint16_t param;
-} pwm_packet_t;
-
-typedef struct
-{
-	  uint16_t delay;
-	  uint16_t numOfFreq;
-
+	  uint32_t delay;
+	  uint32_t total_FreqCount;
+	  uint32_t current_FreqCount;
 	  uint32_t state;
 	  uint32_t pre_time;
 	  uint32_t packet_buf[PKT_BUF_MAX];
@@ -78,7 +69,7 @@ TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim5;
 
 pwm_packet_t pwm_packet;
-pwm_status_t pwm_status;
+pwm_status_t pwm_status = {10000, 10};
 static pwm_t pwm_tbl[PWM_MAX_CH] =
     {
      {&htim2, TIM_CHANNEL_1, 1000000, 240,   10}, //PA15, RF GENERATOR TRIGGER IN (Windfreak)
@@ -87,6 +78,33 @@ static pwm_t pwm_tbl[PWM_MAX_CH] =
  	 {&htim5, TIM_CHANNEL_2, 1000000, 240,   10000}, //PA1,
     };
 
+void pwmSet_TotalCountFreq(uint32_t total_FreqCount){
+	pwm_status.total_FreqCount = total_FreqCount;
+}
+
+void pwmSet_SycDelay(uint8_t ch, uint32_t delay)
+{
+  pwm_t* p_pwm = &pwm_tbl[ch];
+  // 1 clock is delayed when using encapulated function. To synchronize, add 1 clock
+  p_pwm->h_tim->Instance->CNT = delay+1;
+}
+
+uint32_t pwmGet_SycDelay(uint8_t ch)
+{
+  pwm_t* p_pwm = &pwm_tbl[ch];
+  // 1 clock is delayed when using encapulated function. To synchronize, add 1 clock
+   return p_pwm->h_tim->Instance->CNT-1;
+}
+
+
+void pwmRun_ODMR(){
+	//Init
+	pwm_status.current_FreqCount=0;
+
+	pwmStart(_DEF_PWM1);
+	pwmSet_SycDelay(UART_PWM, pwm_status.delay);
+	pwmStart(_DEF_PWM2);
+}
 
 
 bool ReceivePacket(uint8_t ch)
@@ -123,7 +141,6 @@ bool ReceivePacket(uint8_t ch)
     }
   return ret;
 }
-
 
 bool pwmProcessPKT(uint8_t rx_data)
 {
@@ -186,7 +203,6 @@ bool pwmProcessPKT(uint8_t rx_data)
   }
   return ret;
 }
-
 
 bool checksumPacket()
 {
@@ -384,12 +400,6 @@ void pwmStart(uint8_t ch)
   HAL_TIM_PWM_Start_IT(p_pwm->h_tim, p_pwm->channel);
 }
 
-void pwmSycDelay(uint8_t ch, uint32_t delay)
-{
-  pwm_t* p_pwm = &pwm_tbl[ch];
-  // 1 clock is delayed when using encapulated function. To synchronize, add 1 clock
-  p_pwm->h_tim->Instance->CNT = delay+1;
-}
 
 
 bool pwmDeinit(uint8_t ch)
@@ -424,14 +434,17 @@ bool pwmStop(uint8_t ch)
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance==TIM2)
-		  {
-
-				ledToggle(_DEF_LED1);
-		  }
+	{
+		pwm_status.current_FreqCount++;
+		if (pwm_status.total_FreqCount == pwm_status.current_FreqCount){
+			pwmStop(_DEF_PWM1);
+			pwmStop(_DEF_PWM2);
+		}
+	}
 }
 
 
-//
+
 //void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 //	if(htim->Instance==TIM2)
 //		  {

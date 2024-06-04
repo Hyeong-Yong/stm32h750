@@ -53,15 +53,26 @@ enum
   PWM_INST_WRITE = 0x03,
 };
 
+
+typedef struct
+{
+  uint8_t header;
+  uint8_t length;
+  uint8_t inst;
+  uint8_t check;
+  uint16_t param;
+} pwm_packet_t;
+
+
 bool pwmInit(void);
 bool pwmBegin(uint8_t ch, uint32_t period, uint32_t pulse, uint32_t prescaler);
 bool pwmDeinit(uint8_t ch);
 void pwmStart(uint8_t ch);
 bool pwmStop(uint8_t ch);
-void pwmSycDelay(uint8_t ch, uint32_t delay);
+void pwmSet_SycDelay(uint8_t ch, uint32_t delay);
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-
-
+uint32_t pwmGet_SycDelay(uint8_t ch);
+void pwmRun_ODMR();
 
 bool pwmProcessPKT(uint8_t rx_data);
 bool ReceivePacket(uint8_t ch);
