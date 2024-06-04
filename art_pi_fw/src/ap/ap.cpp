@@ -17,7 +17,7 @@ extern pwm_packet_t pwm_packet;
 
 void apInit(void)
 {
-  cliOpen(_DEF_UART1, 57600);
+  //cliOpen(_DEF_UART1, 57600);
   //adcInitInterleaved();
   spiOpen(_DEF_SPI1);
   pwmStart(_DEF_PWM1); //PA15, RF GENERATOR TRIGGER IN (Windfreak)
@@ -40,11 +40,11 @@ void apMain(void)
       ledToggle(_DEF_LED1);
     }
 
-    cliMain();
+    //cliMain();
 
-    if (ReceivePacket(_DEF_UART2)== true){
+    if(ReceivePacket(_DEF_UART1)== true){
     	if (pwm_packet.inst == 0xF3){
-
+    		int i = 3;
     	}
     }
 

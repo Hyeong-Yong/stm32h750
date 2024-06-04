@@ -30,20 +30,20 @@ extern "C" {
 enum state
 {
   STATE_HEADER=0,
-  STATE_LENGTH,
   STATE_INST,
   STATE_PARAM_1,
   STATE_PARAM_2,
-  STATE_CHECK,
+  STATE_CRC_L,
+  STATE_CRC_H,
 };
 enum index
 {
   INDEX_HEADER=0,
-  INDEX_LENGTH,
   INDEX_INST,
   INDEX_PARAM_1,
   INDEX_PARAM_2,
-  INDEX_CHECK,
+  INDEX_CRC_L,
+  INDEX_CRC_H
 };
 
 enum
@@ -59,8 +59,8 @@ typedef struct
   uint8_t header;
   uint8_t length;
   uint8_t inst;
-  uint8_t check;
   uint16_t param;
+  uint16_t crc;
 } pwm_packet_t;
 
 
@@ -76,7 +76,7 @@ void pwmRun_ODMR();
 
 bool pwmProcessPKT(uint8_t rx_data);
 bool ReceivePacket(uint8_t ch);
-bool checksumPacket();
+uint16_t updateCrc(uint16_t crc_accum, uint8_t *data_blk_ptr, uint16_t data_blk_size);
 
 #endif
 
