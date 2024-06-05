@@ -59,6 +59,8 @@ typedef struct
 	  uint32_t delay;
 	  uint32_t total_FreqCount;
 	  uint32_t current_FreqCount;
+
+	  uint32_t param_index;
 	  uint32_t state;
 	  uint32_t pre_time;
 	  uint32_t packet_buf[PKT_BUF_LENGH];
@@ -69,7 +71,7 @@ TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim5;
 
 pwm_packet_t pwm_packet;
-pwm_status_t pwm_status = {10000, 10};
+pwm_status_t pwm_status = {10000, 10, 1, 0};
 static pwm_t pwm_tbl[PWM_MAX_CH] =
     {
      {&htim2, TIM_CHANNEL_1, 1000000, 240,   10}, //PA15, RF GENERATOR TRIGGER IN (Windfreak)
@@ -159,21 +161,29 @@ bool pwmProcessPKT(uint8_t rx_data)
       if (rx_data == STX)
 	{
       pwm_status.packet_buf[INDEX_HEADER]= rx_data;
-      pwm_status.state = STATE_INST;
+      pwm_status.state = STATE_LENGTH;
 	}
       break;
+    case STATE_LENGTH:
+    	pwm_status.packet_buf[INDEX_LENGTH]= rx_data;
+    	pwm_status.state = STATE_INST;
+      break;
+
     case STATE_INST:
     	pwm_status.packet_buf[INDEX_INST]= rx_data;
-    	pwm_status.state = STATE_PARAM_1;
+
+    	if (pwm_status.packet_buf[INDEX_INST])
+    	pwm_status.state = STATE_PARAM;
       break;
-    case STATE_PARAM_1:
-    	pwm_status.packet_buf[INDEX_PARAM_1] = rx_data;
-    	pwm_status.state= STATE_PARAM_2;
+    case STATE_PARAM:
+    	pwm_status.packet_buf[INDEX_PARAM]= rx_data;
+
+    	if (pwm_status.param_index <pwm_status.packet_buf[INDEX_LENGTH] ){
+    	pwm_status.state = STATE_CRC_L;
+    	pwm_status.param_index++;
+    	}
       break;
-    case STATE_PARAM_2:
-    	pwm_status.packet_buf[INDEX_PARAM_2] = rx_data;
-    	pwm_status.state= STATE_CRC_L;
-      break;
+
     case STATE_CRC_L:
         pwm_status.packet_buf[INDEX_CRC_L] = rx_data;
     	pwm_status.state= STATE_CRC_H;

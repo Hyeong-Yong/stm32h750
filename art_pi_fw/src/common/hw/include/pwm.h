@@ -30,20 +30,20 @@ extern "C" {
 enum state
 {
   STATE_HEADER=0,
+  STATE_LENGTH,
   STATE_INST,
-  STATE_PARAM_1,
-  STATE_PARAM_2,
+  STATE_PARAM,
   STATE_CRC_L,
   STATE_CRC_H,
 };
+
 enum index
 {
   INDEX_HEADER=0,
+  INDEX_LENGTH,
   INDEX_INST,
-  INDEX_PARAM_1,
-  INDEX_PARAM_2,
-  INDEX_CRC_L,
-  INDEX_CRC_H
+  INDEX_PARAM,
+  INDEX_ERR
 };
 
 enum
