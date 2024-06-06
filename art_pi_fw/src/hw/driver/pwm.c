@@ -31,12 +31,10 @@ static void cliPWM(cli_args_t *args);
 
 enum instruction
   {
-    INST_SET_INIT = 0x01,
-    INST_SET_DELAY =0x02,
-    INST_SET_NumOfFreq = 0x03,
-    INST_GET_DELAY = 0x04,
-    INST_GET_NumOfFreq =0x05,
-    INST_RUN = 0x06,
+    INST_SET_TRIGGER_DELAY    = 0x01,
+    INST_SET_TRIGGER_COUNT    = 0x02,
+    INST_INIT_TRIGGER         = 0x03,
+    INST_START_TRIGGER        = 0x04,
   };
 
 typedef struct
@@ -53,17 +51,18 @@ typedef struct
 
 
 const uint8_t UART_PWM = _DEF_UART1;
-#define PKT_BUF_LENGH 6
+#define PKT_BUF_LENGH 9 // header[1]+LENGTH[1]+INST[1]+PARAM[4]+CRC[2]
 typedef struct
 {
+	  uint32_t period;
 	  uint32_t delay;
-	  uint32_t total_FreqCount;
-	  uint32_t current_FreqCount;
+	  uint32_t total_TriggerCount;
+	  uint32_t current_TriggerCount;
 
 	  uint32_t param_index;
 	  uint32_t state;
 	  uint32_t pre_time;
-	  uint32_t packet_buf[PKT_BUF_LENGH];
+	  uint8_t packet_buf[PKT_BUF_LENGH];
 } pwm_status_t;
 
 
@@ -71,7 +70,7 @@ TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim5;
 
 pwm_packet_t pwm_packet;
-pwm_status_t pwm_status = {10000, 10, 1, 0};
+pwm_status_t pwm_status = {10000, 10000, 10, 1, 0,0};
 static pwm_t pwm_tbl[PWM_MAX_CH] =
     {
      {&htim2, TIM_CHANNEL_1, 1000000, 240,   10}, //PA15, RF GENERATOR TRIGGER IN (Windfreak)
@@ -80,8 +79,8 @@ static pwm_t pwm_tbl[PWM_MAX_CH] =
  	 {&htim5, TIM_CHANNEL_2, 1000000, 240,   10000}, //PA1,
     };
 
-void pwmSet_TotalCountFreq(uint32_t total_FreqCount){
-	pwm_status.total_FreqCount = total_FreqCount;
+void pwmSet_TotalCountFreq(uint32_t total_TriggerCount){
+	pwm_status.total_TriggerCount = total_TriggerCount;
 }
 
 void pwmSet_SycDelay(uint8_t ch, uint32_t delay)
@@ -99,17 +98,8 @@ uint32_t pwmGet_SycDelay(uint8_t ch)
 }
 
 
-void pwmRun_ODMR(){
-	//Init
-	pwm_status.current_FreqCount=0;
 
-	pwmStart(_DEF_PWM1);
-	pwmSet_SycDelay(UART_PWM, pwm_status.delay);
-	pwmStart(_DEF_PWM2);
-}
-
-
-bool ReceivePacket(uint8_t ch)
+bool triggerReceivePacket(uint8_t ch)
 {
   bool ret = false;
 
@@ -151,6 +141,7 @@ bool pwmProcessPKT(uint8_t rx_data)
   if ( millis() - pwm_status.pre_time > 100)
     {
 	  pwm_status.state = STATE_HEADER;
+	  pwm_status.param_index=0;
     }
   pwm_status.pre_time= millis();
 
@@ -168,22 +159,19 @@ bool pwmProcessPKT(uint8_t rx_data)
     	pwm_status.packet_buf[INDEX_LENGTH]= rx_data;
     	pwm_status.state = STATE_INST;
       break;
-
     case STATE_INST:
     	pwm_status.packet_buf[INDEX_INST]= rx_data;
-
-    	if (pwm_status.packet_buf[INDEX_INST])
     	pwm_status.state = STATE_PARAM;
       break;
     case STATE_PARAM:
-    	pwm_status.packet_buf[INDEX_PARAM]= rx_data;
+        	pwm_status.packet_buf[INDEX_PARAM_1 + pwm_status.param_index] = rx_data;
+        	pwm_status.param_index++;
 
-    	if (pwm_status.param_index <pwm_status.packet_buf[INDEX_LENGTH] ){
-    	pwm_status.state = STATE_CRC_L;
-    	pwm_status.param_index++;
-    	}
+    	if (pwm_status.param_index == 4){
+        	pwm_status.state = STATE_CRC_L;
+            pwm_status.param_index=0;
+    		}
       break;
-
     case STATE_CRC_L:
         pwm_status.packet_buf[INDEX_CRC_L] = rx_data;
     	pwm_status.state= STATE_CRC_H;
@@ -191,26 +179,29 @@ bool pwmProcessPKT(uint8_t rx_data)
     case STATE_CRC_H:
       pwm_status.packet_buf[INDEX_CRC_H] = rx_data;
 
-      pwm_packet.crc  = pwm_status.packet_buf[INDEX_CRC_L] <<0;
-      pwm_packet.crc  = pwm_status.packet_buf[INDEX_CRC_H] <<8;
-      uint16_t crc = updateCrc(0, (uint8_t *)pwm_status.packet_buf, PKT_BUF_LENGH);
+      pwm_packet.crc  = (uint16_t)pwm_status.packet_buf[INDEX_CRC_L] <<0;
+      pwm_packet.crc |= (uint16_t)pwm_status.packet_buf[INDEX_CRC_H] <<8;
+      uint16_t crc = computeCrc(0, (uint8_t*)pwm_status.packet_buf, PKT_BUF_LENGH);
       if (crc == pwm_packet.crc)
       {
       pwm_packet.header = pwm_status.packet_buf[INDEX_HEADER];
+      pwm_packet.length = pwm_status.packet_buf[INDEX_LENGTH];
       pwm_packet.inst   = pwm_status.packet_buf[INDEX_INST];
       pwm_packet.param  = pwm_status.packet_buf[INDEX_PARAM_1] << 0;
       pwm_packet.param |= pwm_status.packet_buf[INDEX_PARAM_2] << 8;
+      pwm_packet.param  = pwm_status.packet_buf[INDEX_PARAM_3] << 16;
+      pwm_packet.param |= pwm_status.packet_buf[INDEX_PARAM_4] << 24;
 	  ret=true;
       }
       pwm_status.state = STATE_HEADER;
-
+      pwm_status.param_index=0;
+      DoInst(pwm_packet.inst);
       break;
   }
   return ret;
 }
 
-
-uint16_t updateCrc(uint16_t crc_accum, uint8_t *data_blk_ptr, uint16_t data_blk_size)
+uint16_t computeCrc(uint16_t crc_accum, uint8_t *data_blk_ptr, uint16_t data_blk_size)
 {
     uint16_t  i, j;
     const uint16_t  crc_table[256] = {
@@ -248,13 +239,35 @@ uint16_t updateCrc(uint16_t crc_accum, uint8_t *data_blk_ptr, uint16_t data_blk_
         0x8213, 0x0216, 0x021C, 0x8219, 0x0208, 0x820D, 0x8207, 0x0202
     };
 
-    for(j = 0; j < data_blk_size; j++)
+    for(j = 0; j < data_blk_size-2; j++)
     {
       i = ((uint16_t)(crc_accum >> 8) ^ data_blk_ptr[j]) & 0xFF;
       crc_accum = (crc_accum << 8) ^ crc_table[i];
     }
 
     return crc_accum;
+}
+
+void DoInst(uint8_t inst){
+	switch (inst){
+	case INST_INIT_TRIGGER:
+		pwm_status.current_TriggerCount = 0;
+		pwm_status.total_TriggerCount = 1;
+		pwmStart(_DEF_PWM1);
+		break;
+	case INST_SET_TRIGGER_DELAY:
+		pwm_status.delay = pwm_packet.param;
+		break;
+	case INST_SET_TRIGGER_COUNT:
+		pwm_status.total_TriggerCount = pwm_packet.param;
+		break;
+	case INST_START_TRIGGER:
+		pwm_status.current_TriggerCount=0;
+		pwmStart(_DEF_PWM1);
+		pwmSet_SycDelay(_DEF_PWM1, pwm_status.delay);
+		pwmStart(_DEF_PWM2);
+		break;
+	}
 }
 
 bool pwmInit(void)
@@ -464,10 +477,10 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance==TIM2)
 	{
-		pwm_status.current_FreqCount++;
-		if (pwm_status.total_FreqCount == pwm_status.current_FreqCount){
+		pwm_status.current_TriggerCount++;
+		if (pwm_status.total_TriggerCount == pwm_status.current_TriggerCount){
 			pwmStop(_DEF_PWM1);
-			pwmStop(_DEF_PWM2);
+			pwm_status.current_TriggerCount=0;
 		}
 	}
 }

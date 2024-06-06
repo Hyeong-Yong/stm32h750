@@ -42,8 +42,12 @@ enum index
   INDEX_HEADER=0,
   INDEX_LENGTH,
   INDEX_INST,
-  INDEX_PARAM,
-  INDEX_ERR
+  INDEX_PARAM_1,
+  INDEX_PARAM_2,
+  INDEX_PARAM_3,
+  INDEX_PARAM_4,
+  INDEX_CRC_L,
+  INDEX_CRC_H,
 };
 
 enum
@@ -59,7 +63,7 @@ typedef struct
   uint8_t header;
   uint8_t length;
   uint8_t inst;
-  uint16_t param;
+  uint32_t param;
   uint16_t crc;
 } pwm_packet_t;
 
@@ -72,11 +76,10 @@ bool pwmStop(uint8_t ch);
 void pwmSet_SycDelay(uint8_t ch, uint32_t delay);
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 uint32_t pwmGet_SycDelay(uint8_t ch);
-void pwmRun_ODMR();
-
+void DoInst(uint8_t inst);
 bool pwmProcessPKT(uint8_t rx_data);
-bool ReceivePacket(uint8_t ch);
-uint16_t updateCrc(uint16_t crc_accum, uint8_t *data_blk_ptr, uint16_t data_blk_size);
+bool triggerReceivePacket(uint8_t ch);
+uint16_t computeCrc(uint16_t crc_accum, uint8_t *data_blk_ptr, uint16_t data_blk_size);
 
 #endif
 
