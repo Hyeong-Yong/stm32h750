@@ -54,7 +54,7 @@ const uint8_t UART_PWM = _DEF_UART1;
 #define PKT_BUF_LENGH 9 // header[1]+LENGTH[1]+INST[1]+PARAM[4]+CRC[2]
 typedef struct
 {
-	  uint32_t period;
+	  uint32_t interval;
 	  uint32_t delay;
 	  uint32_t total_TriggerCount;
 	  uint32_t current_TriggerCount;
@@ -73,10 +73,11 @@ pwm_packet_t pwm_packet;
 pwm_status_t pwm_status = {10000, 10000, 10, 1, 0,0};
 static pwm_t pwm_tbl[PWM_MAX_CH] =
     {
-     {&htim2, TIM_CHANNEL_1, 1000000, 240,   10}, //PA15, RF GENERATOR TRIGGER IN (Windfreak)
-     {&htim5, TIM_CHANNEL_1, 1000000, 240,   10}, //PH10, DIGITIZER TRIGGER IN (AlazarTech)
+     //period : 10ms, pulse > 20us
+     {&htim2, TIM_CHANNEL_1, 10000, 240,   20}, //PA15, RF GENERATOR TRIGGER IN (Windfreak)
+     {&htim5, TIM_CHANNEL_1, 10000, 240,   20}, //PH10, DIGITIZER TRIGGER IN (AlazarTech)
+ 	 {&htim5, TIM_CHANNEL_2, 10000, 240,   1}, //PA1,
 	 // 1000000 = 1 sec, 1000 = 1ms, 1 = 1 us
- 	 {&htim5, TIM_CHANNEL_2, 1000000, 240,   10000}, //PA1,
     };
 
 void pwmSet_TotalCountFreq(uint32_t total_TriggerCount){
@@ -307,6 +308,8 @@ bool pwmBegin(uint8_t ch, uint32_t period, uint32_t pulse, uint32_t prescaler)
   {
 
   case _DEF_PWM1:
+	  pwm_status.interval = p_pwm->period;
+
       p_pwm->h_tim=&htim2;
       p_pwm->h_tim->Instance = TIM2;
       p_pwm->h_tim->Init.Prescaler = p_pwm->prescaler;
@@ -478,7 +481,7 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 	if(htim->Instance==TIM2)
 	{
 		pwm_status.current_TriggerCount++;
-		if (pwm_status.total_TriggerCount == pwm_status.current_TriggerCount){
+		if (pwm_status.total_TriggerCount < pwm_status.current_TriggerCount){
 			pwmStop(_DEF_PWM1);
 			pwm_status.current_TriggerCount=0;
 		}
@@ -569,6 +572,9 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* tim_baseHandle)
 
 #ifdef _USE_HW_CLI
 
+
+
+
 static void cliPWM(cli_args_t *args){
 	  bool ret = false;
 
@@ -586,28 +592,55 @@ static void cliPWM(cli_args_t *args){
 	    {
 		  pwmStop(_DEF_PWM1);
 		  pwmStop(_DEF_PWM2);
+		  pwm_status.current_TriggerCount =0;
 		  cliPrintf("pwmStop");
 	      ret = true;
 	    }
 
-	  uint32_t period;
-      period=args->getData(1);
+      if (args->argc==2 && args->isStr(0, "count")== true){
+          uint32_t triggerCount=args->getData(1);
+    	  pwm_status.total_TriggerCount = triggerCount;
 
-	  if (args->argc==2 && args->isStr(0, "set")==true){
+
 		  pwmStop(_DEF_PWM1);
 		  pwmStop(_DEF_PWM2);
-	      pwmBegin(_DEF_PWM1, period, pwm_tbl[_DEF_PWM1].pulse, pwm_tbl[_DEF_PWM1].prescaler);
-	      pwmBegin(_DEF_PWM2, period, pwm_tbl[_DEF_PWM2].pulse, pwm_tbl[_DEF_PWM2].prescaler);
-		  pwmStart(_DEF_PWM1);
-		  pwmStart(_DEF_PWM2);
-	      cliPrintf("set");
+	      pwmBegin(_DEF_PWM1, pwm_status.interval, pwm_tbl[_DEF_PWM1].pulse, pwm_tbl[_DEF_PWM1].prescaler);
+	      pwmBegin(_DEF_PWM2, pwm_status.interval, pwm_tbl[_DEF_PWM2].pulse, pwm_tbl[_DEF_PWM2].prescaler);
+	      cliPrintf("count");
+	      ret = true;
+      }
+
+      if (args->argc==2 && args->isStr(0, "pulse")== true){
+          uint32_t pulse=args->getData(1);
+
+    	  pwmStop(_DEF_PWM1);
+		  pwmStop(_DEF_PWM2);
+	      pwmBegin(_DEF_PWM1, pwm_status.interval, pulse, pwm_tbl[_DEF_PWM1].prescaler);
+	      pwmBegin(_DEF_PWM2, pwm_status.interval, pulse, pwm_tbl[_DEF_PWM2].prescaler);
+	      cliPrintf("pulse");
+	      ret = true;
+      }
+
+
+
+	  if (args->argc==2 && args->isStr(0, "interval")==true){
+		  uint32_t interval =args->getData(1)*1000;
+		  pwm_status.interval = interval;
+		  pwmStop(_DEF_PWM1);
+		  pwmStop(_DEF_PWM2);
+	      pwmBegin(_DEF_PWM1, interval, pwm_tbl[_DEF_PWM1].pulse, pwm_tbl[_DEF_PWM1].prescaler);
+	      pwmBegin(_DEF_PWM2, interval, pwm_tbl[_DEF_PWM2].pulse, pwm_tbl[_DEF_PWM2].prescaler);
+	      cliPrintf("interval");
+	      ret = true;
 	  }
 
 	  if(ret!=true)
 	    {
 	      cliPrintf("start\n");
 	      cliPrintf("stop\n");
-	      cliPrintf("set period\n");
+	      cliPrintf("interval [ms]\n");
+	      cliPrintf("count [number]\n");
+	      cliPrintf("pulse [us]\n");
 
 	    }
 	}
