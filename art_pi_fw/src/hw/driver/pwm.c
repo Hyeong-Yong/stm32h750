@@ -54,7 +54,7 @@ const uint8_t UART_PWM = _DEF_UART1;
 #define PKT_BUF_LENGH 9 // header[1]+LENGTH[1]+INST[1]+PARAM[4]+CRC[2]
 typedef struct
 {
-	  uint32_t interval;
+	  uint32_t period;
 	  uint32_t delay;
 	  uint32_t total_TriggerCount;
 	  uint32_t current_TriggerCount;
@@ -70,13 +70,12 @@ TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim5;
 
 pwm_packet_t pwm_packet;
-pwm_status_t pwm_status = {10000, 10000, 10, 1, 0,0};
+pwm_status_t pwm_status = {10000, 10000, 10, 0, 0,0};
 static pwm_t pwm_tbl[PWM_MAX_CH] =
     {
-     //period : 10ms, pulse > 20us
+     //period : 10ms, pulse > 20us, step time : 0.1 ms
      {&htim2, TIM_CHANNEL_1, 10000, 240,   20}, //PA15, RF GENERATOR TRIGGER IN (Windfreak)
      {&htim5, TIM_CHANNEL_1, 10000, 240,   20}, //PH10, DIGITIZER TRIGGER IN (AlazarTech)
- 	 {&htim5, TIM_CHANNEL_2, 10000, 240,   1}, //PA1,
 	 // 1000000 = 1 sec, 1000 = 1ms, 1 = 1 us
     };
 
@@ -84,11 +83,11 @@ void pwmSet_TotalCountFreq(uint32_t total_TriggerCount){
 	pwm_status.total_TriggerCount = total_TriggerCount;
 }
 
-void pwmSet_SycDelay(uint8_t ch, uint32_t delay)
+void pwmSet_SycDelay(uint8_t ch, uint32_t delay_us)
 {
   pwm_t* p_pwm = &pwm_tbl[ch];
   // 1 clock is delayed when using encapulated function. To synchronize, add 1 clock
-  p_pwm->h_tim->Instance->CNT = delay+1;
+  p_pwm->h_tim->Instance->CNT = delay_us+1;
 }
 
 uint32_t pwmGet_SycDelay(uint8_t ch)
@@ -190,7 +189,7 @@ bool pwmProcessPKT(uint8_t rx_data)
       pwm_packet.inst   = pwm_status.packet_buf[INDEX_INST];
       pwm_packet.param  = pwm_status.packet_buf[INDEX_PARAM_1] << 0;
       pwm_packet.param |= pwm_status.packet_buf[INDEX_PARAM_2] << 8;
-      pwm_packet.param  = pwm_status.packet_buf[INDEX_PARAM_3] << 16;
+      pwm_packet.param |= pwm_status.packet_buf[INDEX_PARAM_3] << 16;
       pwm_packet.param |= pwm_status.packet_buf[INDEX_PARAM_4] << 24;
 	  ret=true;
       }
@@ -264,8 +263,8 @@ void DoInst(uint8_t inst){
 		break;
 	case INST_START_TRIGGER:
 		pwm_status.current_TriggerCount=0;
+		delay(1);
 		pwmStart(_DEF_PWM1);
-		pwmSet_SycDelay(_DEF_PWM1, pwm_status.delay);
 		pwmStart(_DEF_PWM2);
 		break;
 	}
@@ -308,7 +307,7 @@ bool pwmBegin(uint8_t ch, uint32_t period, uint32_t pulse, uint32_t prescaler)
   {
 
   case _DEF_PWM1:
-	  pwm_status.interval = p_pwm->period;
+	  pwm_status.period = p_pwm->period;
 
       p_pwm->h_tim=&htim2;
       p_pwm->h_tim->Instance = TIM2;
@@ -394,48 +393,6 @@ bool pwmBegin(uint8_t ch, uint32_t period, uint32_t pulse, uint32_t prescaler)
           HAL_TIM_MspPostInit(p_pwm->h_tim);
     	break;
 
-    case _DEF_PWM3:
-      p_pwm->h_tim=&htim5;
-      p_pwm->h_tim->Instance = TIM5;
-      p_pwm->h_tim->Init.Prescaler = p_pwm->prescaler;
-      p_pwm->h_tim->Init.CounterMode = TIM_COUNTERMODE_UP;
-      p_pwm->h_tim->Init.Period = p_pwm->period;
-      p_pwm->h_tim->Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-      p_pwm->h_tim->Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-        if (HAL_TIM_Base_Init(p_pwm->h_tim) == HAL_OK)
-        {
-          p_pwm->is_timeInit = true;
-          ret= true;
-        }
-
-        sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-        if (HAL_TIM_ConfigClockSource(p_pwm->h_tim, &sClockSourceConfig) != HAL_OK)
-        {
-          Error_Handler();
-        }
-        if (HAL_TIM_PWM_Init(p_pwm->h_tim) != HAL_OK)
-        {
-          Error_Handler();
-        }
-
-        sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-        sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-        if (HAL_TIMEx_MasterConfigSynchronization(p_pwm->h_tim, &sMasterConfig) != HAL_OK)
-        {
-          Error_Handler();
-        }
-
-        sConfigOC.OCMode = TIM_OCMODE_PWM1;
-        sConfigOC.Pulse = p_pwm->pulse;
-        sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-        sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-        if (HAL_TIM_PWM_ConfigChannel(p_pwm->h_tim, &sConfigOC, p_pwm->channel) == HAL_OK)
-        {
-            p_pwm->is_pwmInit=true;
-        }
-        HAL_TIM_MspPostInit(p_pwm->h_tim);
-      break;
-
   }
   ret = true;
   return ret;
@@ -480,20 +437,14 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance==TIM2)
 	{
-		pwm_status.current_TriggerCount++;
 		if (pwm_status.total_TriggerCount < pwm_status.current_TriggerCount){
 			pwmStop(_DEF_PWM1);
+			pwmStop(_DEF_PWM2);
 			pwm_status.current_TriggerCount=0;
 		}
+		pwm_status.current_TriggerCount++;
 	}
 }
-
-//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
-//	if(htim->Instance==TIM2)
-//		  {
-//				ledToggle(_DEF_LED1);
-//		  }
-//}
 
 void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* tim_baseHandle)
 {
@@ -572,9 +523,6 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* tim_baseHandle)
 
 #ifdef _USE_HW_CLI
 
-
-
-
 static void cliPWM(cli_args_t *args){
 	  bool ret = false;
 
@@ -600,37 +548,34 @@ static void cliPWM(cli_args_t *args){
       if (args->argc==2 && args->isStr(0, "count")== true){
           uint32_t triggerCount=args->getData(1);
     	  pwm_status.total_TriggerCount = triggerCount;
-
-
 		  pwmStop(_DEF_PWM1);
 		  pwmStop(_DEF_PWM2);
-	      pwmBegin(_DEF_PWM1, pwm_status.interval, pwm_tbl[_DEF_PWM1].pulse, pwm_tbl[_DEF_PWM1].prescaler);
-	      pwmBegin(_DEF_PWM2, pwm_status.interval, pwm_tbl[_DEF_PWM2].pulse, pwm_tbl[_DEF_PWM2].prescaler);
+	      pwmBegin(_DEF_PWM1, pwm_status.period, pwm_tbl[_DEF_PWM1].pulse, pwm_tbl[_DEF_PWM1].prescaler);
+	      pwmBegin(_DEF_PWM2, pwm_status.period, pwm_tbl[_DEF_PWM2].pulse, pwm_tbl[_DEF_PWM2].prescaler);
 	      cliPrintf("count");
 	      ret = true;
       }
 
       if (args->argc==2 && args->isStr(0, "pulse")== true){
           uint32_t pulse=args->getData(1);
-
     	  pwmStop(_DEF_PWM1);
 		  pwmStop(_DEF_PWM2);
-	      pwmBegin(_DEF_PWM1, pwm_status.interval, pulse, pwm_tbl[_DEF_PWM1].prescaler);
-	      pwmBegin(_DEF_PWM2, pwm_status.interval, pulse, pwm_tbl[_DEF_PWM2].prescaler);
+	      pwmBegin(_DEF_PWM1, pwm_status.period, pulse, pwm_tbl[_DEF_PWM1].prescaler);
+	      pwmBegin(_DEF_PWM2, pwm_status.period, pulse, pwm_tbl[_DEF_PWM2].prescaler);
 	      cliPrintf("pulse");
 	      ret = true;
       }
 
 
 
-	  if (args->argc==2 && args->isStr(0, "interval")==true){
-		  uint32_t interval =args->getData(1)*1000;
-		  pwm_status.interval = interval;
+	  if (args->argc==2 && args->isStr(0, "period")==true){
+		  uint32_t period =args->getData(1)*1000;
+		  pwm_status.period = period;
 		  pwmStop(_DEF_PWM1);
 		  pwmStop(_DEF_PWM2);
-	      pwmBegin(_DEF_PWM1, interval, pwm_tbl[_DEF_PWM1].pulse, pwm_tbl[_DEF_PWM1].prescaler);
-	      pwmBegin(_DEF_PWM2, interval, pwm_tbl[_DEF_PWM2].pulse, pwm_tbl[_DEF_PWM2].prescaler);
-	      cliPrintf("interval");
+	      pwmBegin(_DEF_PWM1, period, pwm_tbl[_DEF_PWM1].pulse, pwm_tbl[_DEF_PWM1].prescaler);
+	      pwmBegin(_DEF_PWM2, period, pwm_tbl[_DEF_PWM2].pulse, pwm_tbl[_DEF_PWM2].prescaler);
+	      cliPrintf("period");
 	      ret = true;
 	  }
 
@@ -638,10 +583,9 @@ static void cliPWM(cli_args_t *args){
 	    {
 	      cliPrintf("start\n");
 	      cliPrintf("stop\n");
-	      cliPrintf("interval [ms]\n");
+	      cliPrintf("period [ms]\n");
 	      cliPrintf("count [number]\n");
 	      cliPrintf("pulse [us]\n");
-
 	    }
 	}
 
